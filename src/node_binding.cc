@@ -669,7 +669,7 @@ void GetLinkedBinding(const FunctionCallbackInfo<Value>& args) {
 void RegisterBuiltinModules() {
 #define V(modname) _register_##modname();
   NODE_BUILTIN_MODULES(V)
-#undef V
+#undef V  //取消以前定义的宏定义
 }
 
 }  // namespace binding

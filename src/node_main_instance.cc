@@ -109,6 +109,8 @@ int NodeMainInstance::Run() {
   HandleScope handle_scope(isolate_);
 
   int exit_code = 0;
+  //初始化libuv， 执行RunBootstrapping =>
+  //执行[internal/bootstrap/loader和internal/bootstrap/node]
   std::unique_ptr<Environment> env = CreateMainEnvironment(&exit_code);
 
   CHECK_NOT_NULL(env);
@@ -119,9 +121,10 @@ int NodeMainInstance::Run() {
       InternalCallbackScope callback_scope(
           env.get(),
           Local<Object>(),
-          { 1, 0 },
+          {1, 0},
           InternalCallbackScope::kAllowEmptyResource |
               InternalCallbackScope::kSkipAsyncHooks);
+      //执行入口文件的同步代码
       LoadEnvironment(env.get());
     }
 
@@ -133,6 +136,7 @@ int NodeMainInstance::Run() {
       env->performance_state()->Mark(
           node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
       do {
+        //事件循环在这里才开始
         uv_run(env->event_loop(), UV_RUN_DEFAULT);
 
         per_process::v8_platform.DrainVMTasks(isolate_);
@@ -167,8 +171,7 @@ int NodeMainInstance::Run() {
   struct sigaction act;
   memset(&act, 0, sizeof(act));
   for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {
-    if (nr == SIGKILL || nr == SIGSTOP || nr == SIGPROF)
-      continue;
+    if (nr == SIGKILL || nr == SIGSTOP || nr == SIGPROF) continue;
     act.sa_handler = (nr == SIGPIPE) ? SIG_IGN : SIG_DFL;
     CHECK_EQ(0, sigaction(nr, &act, nullptr));
   }
